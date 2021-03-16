@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+const TopicModeler = require("../src/model/topic_modeler");
+const CorpusReader = require("../src/model/corpus_reader");
+const util         = require("../src/helpers/util");
+
+
+Promise.all([
+    CorpusReader.fileLinesArray("./data/stopwords.txt"),
+    CorpusReader.fileLinesArray("./data/documents.txt")
+]).then(data => {
+
+    // Load the topic modeler and run it...
+    let stopwords = data[0];
+    let docs      = data[1];
+    let modeler   = new TopicModeler(stopwords, docs);
+    modeler.numTopics = 8;
+    modeler.processCorpus();
+
+    // Pull out the top words from the topics
+    var topicTopWords = [];
+    for (var topic = 0; topic < modeler.numTopics; topic++)
+        topicTopWords.push(modeler.topNWords(modeler.topicWordCounts[topic], modeler.numTopics));
+
+    console.log();
+    topicTopWords.forEach((topicKeywordList, i) => {
+        console.log("Topic " + (i + 1) + ": " + topicKeywordList);
+    });
+
+    // For the top topic words, how many topics do they appear in?
+    let wordCounts = {};
+    topicTopWords.forEach(wordList => {
+      wordList.split(" ").forEach(word => {
+        if (!wordCounts[word]) wordCounts[word] = {count: 0, word: word};
+        wordCounts[word].count += 1
+      });
+    });
+
+    console.log();
+    console.log("Keyword Topic Distribution");
+    console.log();
+    Object.values(wordCounts).sort(util.byCountDescending).forEach(data => {
+        console.log(data.word + ": " + data.count + " topic" + (data.count > 1 ? "s" : ""));
+    });
+    console.log();
+
+}).catch(function(error) {
+    console.log("Error fetching data");
+    console.log(error);
+});
