@@ -10,6 +10,8 @@ Promise.all([
     CorpusReader.fileLinesArray("./data/documents.txt")
 ]).then(data => {
 
+    let start = new Date();
+
     // Load the topic modeler and run it...
     let stopwords = data[0];
     let docs      = data[1];
@@ -22,6 +24,8 @@ Promise.all([
     for (var topic = 0; topic < modeler.numTopics; topic++)
         topicTopWords.push(modeler.topNWords(modeler.topicWordCounts[topic], modeler.numTopics));
 
+    console.log();
+    console.log("Corpus Topics");
     console.log();
     topicTopWords.forEach((topicKeywordList, i) => {
         console.log("Topic " + (i + 1) + ": " + topicKeywordList);
@@ -42,6 +46,12 @@ Promise.all([
     Object.values(wordCounts).sort(util.byCountDescending).forEach(data => {
         console.log(data.word + ": " + data.count + " topic" + (data.count > 1 ? "s" : ""));
     });
+
+    let finish = new Date();
+    console.log()
+    console.log("Started:    " + start.toLocaleTimeString());
+    console.log("Finished:   " + finish.toLocaleTimeString());
+    console.log("Time Spent: " + (finish - start) + "ms");
     console.log();
 
 }).catch(function(error) {
