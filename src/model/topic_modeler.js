@@ -13,6 +13,8 @@ class TopicModeler {
     static correlationMinTokens = 2;
     static correlationMinProportion = 0.05;
     static wordPattern = XRegExp("\\p{L}[\\p{L}\\p{P}]*\\p{L}", "g");
+    static topicWordSmoothing = 0.01;
+    static documentTopicSmoothing = 0.1;
 
     constructor(stopwordsRaw, docsRaw) {
         this.stopwordsRaw = stopwordsRaw;
@@ -23,8 +25,13 @@ class TopicModeler {
         this.vocabularyCounts = {};
         this.wordTopicCounts = {};
         this.topicWordCounts = {};
+        this.tokensPerTopic = util.zeros(this._numTopics);
+        this.topicWeights = util.zeros(this._numTopics);
         this.documents = [];
         this.stopwords = {};
+
+        this._completeSweeps = 0;
+        this._requestedSweeps = 0;
     }
 
     get numTopics() {
@@ -33,6 +40,22 @@ class TopicModeler {
 
     set numTopics(numTopics) {
         this._numTopics = numTopics;
+    }
+
+    get completeSweeps() {
+        return this._completeSweeps;
+    }
+
+    set completeSweeps(completeSweeps) {
+        this._completeSweeps = completeSweeps;
+    }
+
+    get requestedSweeps() {
+        return this._requestedSweeps;
+    }
+
+    set requestedSweeps(requestedSweeps) {
+        this._requestedSweeps = requestedSweeps;
     }
 
     processCorpus() {
@@ -138,6 +161,7 @@ class TopicModeler {
         // We want to find the subset of topics that occur with non-trivial concentration in this document.
         // Only consider topics with at least the minimum number of tokens that are at least 5% of the doc.
         var documentTopics = new Array();
+        // console.log("correlationMinTokens:" + correlationMinTokens + " correlationMinProportion:" + correlationMinProportion);
         var tokenCutoff = Math.max(correlationMinTokens, correlationMinProportion * d.tokens.length);
 
         for (var topic = 0; topic < this.numTopics; topic++) {
@@ -184,6 +208,70 @@ class TopicModeler {
 
     topNWords(wordCounts, n) {
         return wordCounts.slice(0,n).map(d => d.word).join(" ");
+    }
+
+    sweep() {
+        var startTime = Date.now();
+
+        var topicNormalizers = util.zeros(this.numTopics);
+        for (var topic = 0; topic < this.numTopics; topic++) {
+            topicNormalizers[topic] = 1.0 / (this.vocabularySize * TopicModeler.topicWordSmoothing + this.tokensPerTopic[topic]);
+        }
+
+        for (var doc = 0; doc < this.documents.length; doc++) {
+            var currentDoc = this.documents[doc];
+            var docTopicCounts = currentDoc.topicCounts;
+
+            for (var position = 0; position < currentDoc.tokens.length; position++) {
+                var token = currentDoc.tokens[position];
+                if (token.isStopword) { continue; }
+
+                this.tokensPerTopic[ token.topic ]--;
+                var currentWordTopicCounts = this.wordTopicCounts[ token.word ];
+                currentWordTopicCounts[ token.topic ]--;
+                // if (currentWordTopicCounts[ token.topic ] == 0) {
+                //     //delete(currentWordTopicCounts[ token.topic ]);
+                // }
+                docTopicCounts[ token.topic ]--;
+                topicNormalizers[ token.topic ] = 1.0 / (this.vocabularySize * TopicModeler.topicWordSmoothing + this.tokensPerTopic[ token.topic ]);
+
+                var sum = 0.0;
+                for (var topic = 0; topic < this.numTopics; topic++) {
+                    if (currentWordTopicCounts[ topic ]) {
+                        this.topicWeights[topic] = (TopicModeler.documentTopicSmoothing + docTopicCounts[topic]) * (TopicModeler.topicWordSmoothing + currentWordTopicCounts[ topic ]) * topicNormalizers[topic];
+                    } else {
+                        this.topicWeights[topic] = (TopicModeler.documentTopicSmoothing + docTopicCounts[topic]) * TopicModeler.topicWordSmoothing * topicNormalizers[topic];
+                    }
+                    sum += this.topicWeights[topic];
+                }
+
+                // Sample from an unnormalized discrete distribution
+                var sample = sum * Math.random();
+                var i = 0;
+                sample -= this.topicWeights[i];
+                while (sample > 0.0) {
+                    i++;
+                    sample -= this.topicWeights[i];
+                }
+                token.topic = i;
+
+                this.tokensPerTopic[ token.topic ]++;
+                if (! currentWordTopicCounts[ token.topic ]) {
+                    currentWordTopicCounts[ token.topic ] = 1;
+                } else {
+                    currentWordTopicCounts[ token.topic ] += 1;
+                }
+                docTopicCounts[ token.topic ]++;
+
+                topicNormalizers[ token.topic ] = 1.0 / (this.vocabularySize * TopicModeler.topicWordSmoothing + this.tokensPerTopic[ token.topic ]);
+            }
+        }
+
+        //console.log("sweep in " + (Date.now() - startTime) + " ms");
+        this.completeSweeps += 1;
+        if (this.completeSweeps >= this.requestedSweeps) {
+            this.sortTopicWords();
+        }
     }
 }
 

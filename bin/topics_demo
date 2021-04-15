@@ -18,6 +18,11 @@ Promise.all([
     let modeler   = new TopicModeler(stopwords, docs);
     modeler.numTopics = 8;
     modeler.processCorpus();
+    modeler.requestedSweeps = 50;
+    while (modeler.completeSweeps <= modeler.requestedSweeps) {
+        modeler.sweep();
+        console.log("Sweep #" + modeler.completeSweeps + " completed");
+    }
 
     // Pull out the top words from the topics
     var topicTopWords = [];
