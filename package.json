@@ -1,14 +1,24 @@
 {
-  "name": "lda",
-  "version": "1.0.0",
+  "name": "topical",
+  "version": "0.1.0",
   "description": "",
-  "main": "lda.js",
+  "main": "dist/topical.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Bibliophonix",
+  "license": "MIT",
   "dependencies": {
     "xregexp": "^5.0.1"
+  },
+  "devDependencies": {
+    "webpack": "^5.33.2",
+    "webpack-cli": "^4.6.0",
+    "@babel/core": "^7.13.15",
+    "@babel/plugin-proposal-class-properties": "^7.13.0",
+    "@babel/preset-env": "^7.13.15",
+    "babel-loader": "^8.2.2"
   }
 }

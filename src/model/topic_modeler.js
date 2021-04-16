@@ -267,7 +267,6 @@ class TopicModeler {
             }
         }
 
-        //console.log("sweep in " + (Date.now() - startTime) + " ms");
         this.completeSweeps += 1;
         if (this.completeSweeps >= this.requestedSweeps) {
             this.sortTopicWords();
