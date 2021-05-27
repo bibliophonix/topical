@@ -29,6 +29,7 @@ class TopicModeler {
         this.topicWeights = util.zeros(this._numTopics);
         this.documents = [];
         this.stopwords = {};
+        this.synonyms = {};
 
         this._completeSweeps = 0;
         this._requestedSweeps = 0;
@@ -65,64 +66,64 @@ class TopicModeler {
     }
 
     parseLine(line) {
-      if (line == "") { return; }
-      var docID = this.documents.length;
-      var docDate = "";
-      var fields = line.split("\t");
-      var text = fields[0];  // Assume there's just one field, the text
-      if (fields.length == 3) {  // If it's in [ID]\t[TAG]\t[TEXT] format...
-        docID = fields[0];
-        docDate = fields[1]; // do not interpret date as anything but a string
-        text = fields[2];
-      }
-
-      var tokens = [];
-      var rawTokens = text.toLowerCase().match(TopicModeler.wordPattern);
-      if (rawTokens == null) { return; }
-      var topicCounts = util.zeros(this.numTopics);
-
-      rawTokens.forEach((word) => {
-        if (word !== "") {
-          var topic = Math.floor(Math.random() * this.numTopics);
-
-          if (word.length <= 2) { this.stopwords[word] = 1; }
-
-          var isStopword = this.stopwords[word];
-          if (isStopword) {
-
-            // Record counts for stopwords, but nothing else
-            if (! this.vocabularyCounts[word])
-              this.vocabularyCounts[word] = 1;
-            else
-              this.vocabularyCounts[word] += 1;
-
-          } else {
-
-            if (! this.wordTopicCounts[word]) {
-              this.wordTopicCounts[word] = {};
-              this.vocabularySize++;
-              this.vocabularyCounts[word] = 0;
-            }
-
-            if (! this.wordTopicCounts[word][topic])
-              this.wordTopicCounts[word][topic] = 0;
-
-            this.wordTopicCounts[word][topic] += 1;
-            this.vocabularyCounts[word] += 1;
-            topicCounts[topic] += 1;
-          }
-          tokens.push({"word":word, "topic":topic, "isStopword":isStopword });
+        if (line == "") { return; }
+        var docID = this.documents.length;
+        var docDate = "";
+        var fields = line.split("\t");
+        var text = fields[0];  // Assume there's just one field, the text
+        if (fields.length == 3) {  // If it's in [ID]\t[TAG]\t[TEXT] format...
+            docID = fields[0];
+            docDate = fields[1]; // do not interpret date as anything but a string
+            text = fields[2];
         }
-      });
 
-      this.documents.push({
-        "originalOrder" : this.documents.length,
-        "id" : docID,
-        "date" : docDate,
-        "originalText" : text,
-        "tokens" : tokens,
-        "topicCounts" : topicCounts
-      });
+        var tokens = [];
+        var rawTokens = text.toLowerCase().match(TopicModeler.wordPattern);
+        if (rawTokens == null) { return; }
+        var topicCounts = util.zeros(this.numTopics);
+
+        rawTokens.forEach((word) => {
+            if (this.synonyms.hasOwnProperty(word))
+                word = this.synonyms[word];
+
+            if (word !== "") {
+                var topic = Math.floor(Math.random() * this.numTopics);
+                if (word.length <= 2)
+                    this.stopwords[word] = 1;
+
+                // Record counts for stopwords, but nothing else
+                var isStopword = this.stopwords[word];
+                if (isStopword) {
+                    if (! this.vocabularyCounts[word])
+                        this.vocabularyCounts[word] = 1;
+                    else
+                        this.vocabularyCounts[word] += 1;
+                } else {
+                    if (! this.wordTopicCounts[word]) {
+                        this.wordTopicCounts[word] = {};
+                        this.vocabularySize++;
+                        this.vocabularyCounts[word] = 0;
+                    }
+
+                    if (! this.wordTopicCounts[word][topic])
+                        this.wordTopicCounts[word][topic] = 0;
+
+                    this.wordTopicCounts[word][topic] += 1;
+                    this.vocabularyCounts[word] += 1;
+                    topicCounts[topic] += 1;
+                }
+                tokens.push({"word":word, "topic":topic, "isStopword":isStopword });
+            }
+        });
+
+        this.documents.push({
+            "originalOrder" : this.documents.length,
+            "id" : docID,
+            "date" : docDate,
+            "originalText" : text,
+            "tokens" : tokens,
+            "topicCounts" : topicCounts
+        });
     }
 
     sortTopicWords() {
