@@ -35,6 +35,25 @@ class TopicModeler {
         this._requestedSweeps = 0;
     }
 
+    static loadFromPriorModel(priorModel) {
+        modeler = new TopicModeler(priorModel.stopwordsRaw, priorModel.docsRaw);
+
+        modeler._numTopics = priorModel._numTopics;
+        modeler.vocabularySize = priorModel.vocabularySize;
+        modeler.vocabularyCounts = priorModel.vocabularyCounts;
+        modeler.wordTopicCounts = priorModel.wordTopicCounts;
+        modeler.topicWordCounts = priorModel.topicWordCounts;
+        modeler.tokensPerTopic = priorModel.tokensPerTopic;
+        modeler.topicWeights = priorModel.topicWeights;
+        modeler.documents = priorModel.documents;
+        modeler.stopwords = priorModel.stopwords;
+        modeler.synonyms = priorModel.synonyms;
+        modeler._completeSweeps = priorModel._completeSweeps;
+        modeler._requestedSweeps = priorModel._requestedSweeps;
+
+        return modeler;
+    }
+
     get numTopics() {
         return this._numTopics;
     }
