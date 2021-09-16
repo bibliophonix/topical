@@ -20,4 +20,4 @@ $ bin/topics_demo
 
 ## Acknowledgments
 
-The primary code for this project is derived from an object-oriented port of David Mimno's [jsLDA](https://github.com/mimno/jsLDA). The primary topic modeling class wraps the extracts the topic modeling code from jsLDA's jslda.js code in a JavaScript object for reuse.
+The primary code for this project is derived from an object-oriented port of David Mimno's [jsLDA](https://github.com/mimno/jsLDA). The primary topic modeling class wraps the topic modeling code from jsLDA's jslda.js code in a JavaScript object for reuse.
