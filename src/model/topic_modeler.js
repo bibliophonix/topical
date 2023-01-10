@@ -36,7 +36,7 @@ class TopicModeler {
     }
 
     static loadFromPriorModel(priorModel) {
-        modeler = new TopicModeler(priorModel.stopwordsRaw, priorModel.docsRaw);
+        let modeler = new TopicModeler(priorModel.stopwordsRaw, priorModel.docsRaw);
 
         modeler._numTopics = priorModel._numTopics;
         modeler.vocabularySize = priorModel.vocabularySize;
